@@ -1,3 +1,4 @@
+import config.{type TwinklePubConfig}
 import gleam/http.{Get, Post}
 import gleam/json
 import gleam/list
@@ -7,7 +8,9 @@ import utils
 import web
 import wisp.{type Request, type Response}
 
-pub fn handle_request(req: Request) -> Response {
+import micropub.{get_micropub_config}
+
+pub fn handle_request(req: Request, config: TwinklePubConfig) -> Response {
   use req <- web.middleware(req)
 
   case wisp.path_segments(req) {
@@ -36,85 +39,16 @@ fn micropub(req: Request) {
   }
 }
 
-fn handle_q_param(req: Request, param: String) {
+fn handle_q_param(_req: Request, param: String) {
   case param {
-    "config" -> Some(handle_micropub_config(req))
+    "config" -> Some(handle_micropub_config())
     _ -> None
   }
 }
 
-fn handle_micropub_config(req: Request) {
+fn handle_micropub_config() {
   let config =
     get_micropub_config()
     |> string_tree.from_string
   wisp.json_response(config, 200)
-}
-
-pub type MicropubConfig {
-  MicropubConfig(media_endpoint: String, syndicate_to: List(SyndicateTarget))
-}
-
-pub type SyndicateTarget {
-  SyndicateTarget(uid: String, name: String, service: Service, user: User)
-}
-
-pub type Service {
-  Service(name: String, url: String, photo: String)
-}
-
-pub type User {
-  User(name: String, url: String, photo: String)
-}
-
-fn get_micropub_config() {
-  let user = User("john smith", "http://localhost/user", "")
-  let service =
-    Service(
-      "foo",
-      "http://localhost/service",
-      "http://localhost/service/photo.jpg",
-    )
-  let syndicate_target =
-    SyndicateTarget("0001-001-01-01", "foobar", service, user)
-
-  let config_json =
-    MicropubConfig("http://localhost/media", [syndicate_target])
-    |> encode_micropub_config_to_json
-  config_json
-}
-
-fn encode_micropub_config_to_json(config: MicropubConfig) -> String {
-  json.object([
-    #("media-endpoint", json.string(config.media_endpoint)),
-    #(
-      "syndicate-to",
-      json.array(config.syndicate_to, encode_syndicate_target_to_json_object),
-    ),
-  ])
-  |> json.to_string()
-}
-
-fn encode_syndicate_target_to_json_object(target: SyndicateTarget) -> json.Json {
-  json.object([
-    #("uid", json.string(target.uid)),
-    #("name", json.string(target.name)),
-    #("service", encode_service_to_json_object(target.service)),
-    #("user", encode_user_to_json_object(target.user)),
-  ])
-}
-
-fn encode_service_to_json_object(service: Service) -> json.Json {
-  json.object([
-    #("name", json.string(service.name)),
-    #("url", json.string(service.url)),
-    #("photo", json.string(service.photo)),
-  ])
-}
-
-fn encode_user_to_json_object(user: User) -> json.Json {
-  json.object([
-    #("name", json.string(user.name)),
-    #("url", json.string(user.url)),
-    #("photo", json.string(user.photo)),
-  ])
 }
