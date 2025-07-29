@@ -25,21 +25,9 @@ pub type User {
   User(name: String, url: Option(String), photo: Option(String))
 }
 
-pub fn get_micropub_config() {
-  let user = User("john smith", Some("http://localhost/user"), None)
-  let service =
-    Service(
-      "foo",
-      Some("http://localhost/service"),
-      Some("http://localhost/service/photo.jpg"),
-    )
-  let syndicate_target =
-    SyndicateTarget("0001-001-01-01", "foobar", Some(service), Some(user))
-
-  let config_json =
-    MicropubConfig("http://localhost/media", [syndicate_target])
-    |> encode_micropub_config_to_json
-  config_json
+pub fn get_micropub_config_json(config: MicropubConfig) -> String {
+  config
+  |> encode_micropub_config_to_json
 }
 
 fn encode_micropub_config_to_json(config: MicropubConfig) -> String {
