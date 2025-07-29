@@ -1,5 +1,4 @@
 import gleam/http.{Get, Post}
-import gleam/json
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string_tree
