@@ -1,12 +1,12 @@
-import config.{type TwinklePubConfig}
 import gleam/http.{Get, Post}
 import gleam/option.{None, Some}
 import gleam/string_tree
-import utils
-import web
 import wisp.{type Request, type Response}
 
-import micropub.{MicropubConfig, get_micropub_config_json}
+import twinkle_pub/config.{type TwinklePubConfig}
+import twinkle_pub/micropub.{MicropubConfig, get_micropub_config_json}
+import twinkle_pub/utils
+import twinkle_pub/web
 
 pub fn handle_request(req: Request, config: TwinklePubConfig) -> Response {
   use req <- web.middleware(req)

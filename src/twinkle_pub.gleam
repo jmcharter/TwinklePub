@@ -1,10 +1,10 @@
-import config
 import gleam/erlang/process
 import mist
 import wisp
 import wisp/wisp_mist
 
-import router
+import twinkle_pub/config
+import twinkle_pub/router
 
 pub fn main() -> Nil {
   let config = config.load_config_or_panic()

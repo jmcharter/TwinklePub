@@ -5,7 +5,7 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 
-import micropub.{type SyndicateTarget, syndicate_target_decoder}
+import twinkle_pub/micropub.{type SyndicateTarget, syndicate_target_decoder}
 
 pub type TwinklePubConfig {
   TwinklePubConfig(

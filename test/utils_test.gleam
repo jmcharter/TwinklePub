@@ -1,5 +1,5 @@
 import gleeunit/should
-import utils
+import twinkle_pub/utils
 
 pub fn get_last_query_param_test() {
   let params_two_no_duplicates = [#("foo", "true"), #("bar", "false")]
