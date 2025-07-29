@@ -10,6 +10,7 @@ import twinkle_pub/micropub.{type SyndicateTarget, syndicate_target_decoder}
 pub type TwinklePubConfig {
   TwinklePubConfig(
     token_endpoint: String,
+    media_endpoint: Option(String),
     syndicate_to: Option(List(SyndicateTarget)),
   )
 }
@@ -24,6 +25,11 @@ pub fn load_twinkle_config() -> Result(TwinklePubConfig, ConfigError) {
     Error(_) -> panic as "TOKEN_ENDPOINT environment variable is required"
   }
 
+  let media_endpoint = case envoy.get("MEDIA_ENDPOINT") {
+    Ok(endpoint) -> Some(endpoint)
+    Error(_) -> None
+  }
+
   let syndicate_to = case envoy.get("SYNDICATE_TO") {
     Ok(json_string) ->
       case string.trim(json_string) {
@@ -36,7 +42,7 @@ pub fn load_twinkle_config() -> Result(TwinklePubConfig, ConfigError) {
   }
 
   use syndicate_to <- result.try(syndicate_to)
-  Ok(TwinklePubConfig(token_endpoint, syndicate_to))
+  Ok(TwinklePubConfig(token_endpoint, media_endpoint, syndicate_to))
 }
 
 fn parse_syndicate_to_json(
