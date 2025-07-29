@@ -3,9 +3,13 @@ import gleam/function
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/string
 
 pub type MicropubConfig {
-  MicropubConfig(media_endpoint: String, syndicate_to: List(SyndicateTarget))
+  MicropubConfig(
+    media_endpoint: Option(String),
+    syndicate_to: List(SyndicateTarget),
+  )
 }
 
 pub type SyndicateTarget {
@@ -31,13 +35,23 @@ pub fn get_micropub_config_json(config: MicropubConfig) -> String {
 }
 
 fn encode_micropub_config_to_json(config: MicropubConfig) -> String {
-  json.object([
-    #("media-endpoint", json.string(config.media_endpoint)),
+  let optional_fields =
+    [
+      case config.media_endpoint {
+        Some(endpoint) -> Ok(#("media-endpoint", json.string(endpoint)))
+        None -> Error(Nil)
+      },
+    ]
+    |> list.filter_map(function.identity)
+  [
     #(
       "syndicate-to",
       json.array(config.syndicate_to, encode_syndicate_target_to_json_object),
     ),
-  ])
+    ..optional_fields
+  ]
+  |> list.sort(fn(a, b) { string.compare(a.0, b.0) })
+  |> json.object
   |> json.to_string()
 }
 
