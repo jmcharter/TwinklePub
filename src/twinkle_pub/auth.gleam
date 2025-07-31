@@ -3,23 +3,86 @@ import gleam/dynamic/decode
 import gleam/http/request
 import gleam/httpc
 import gleam/json
+import gleam/list
 import gleam/result
 import gleam/string
-import twinkle_pub/config.{type TwinklePubConfig}
+import gleam/time/timestamp.{type Timestamp}
 
 import wisp.{type Request}
 
+import twinkle_pub/config.{type TwinklePubConfig}
 import twinkle_pub/http_errors.{type MicropubError, Unauthorized}
 
 pub type AuthResponse {
-  AuthResponse(access_token: String, me: String, scope: String)
+  AuthResponse(
+    me: String,
+    client_id: String,
+    scopes: Scopes,
+    issued_at: Timestamp,
+    nonce: Int,
+  )
+}
+
+pub type Scope {
+  ScopeCreate
+  ScopeDraft
+  ScopeUpdate
+  ScopeDelete
+  ScopeMedia
+}
+
+pub type Scopes =
+  List(Scope)
+
+pub fn string_to_scope(scope: String) -> Result(Scope, Nil) {
+  case scope {
+    "create" -> Ok(ScopeCreate)
+    "draft" -> Ok(ScopeDraft)
+    "update" -> Ok(ScopeUpdate)
+    "delete" -> Ok(ScopeDelete)
+    "media" -> Ok(ScopeMedia)
+    _ -> Error(Nil)
+  }
+}
+
+fn parse_scopes(scopes: String) -> Result(Scopes, String) {
+  scopes
+  |> string.split(" ")
+  |> list.try_map(string_to_scope)
+  |> result.map_error(fn(_) { "Invalid scope in: " <> scopes })
+}
+
+fn scope_decoder() -> decode.Decoder(Scopes) {
+  use scope_string <- decode.then(decode.string)
+  case parse_scopes(scope_string) {
+    Error(_) -> decode.failure([ScopeCreate], "Scopes")
+    Ok(scopes) -> decode.success(scopes)
+  }
+}
+
+fn timestamp_decoder() -> decode.Decoder(Timestamp) {
+  use unix_seconds <- decode.then(decode.int)
+  timestamp.from_unix_seconds(unix_seconds)
+  |> decode.success
 }
 
 fn auth_token_decoder() -> decode.Decoder(AuthResponse) {
-  use access_token <- decode.field("access_token", decode.string)
   use me <- decode.field("me", decode.string)
-  use scope <- decode.field("scope", decode.string)
-  decode.success(AuthResponse(access_token:, me:, scope:))
+  use client_id <- decode.field("client_id", decode.string)
+  use scopes <- decode.field("scope", scope_decoder())
+  use issued_at <- decode.field("issued_at", timestamp_decoder())
+  use nonce <- decode.field("nonce", decode.int)
+  decode.success(AuthResponse(me:, client_id:, scopes:, issued_at:, nonce:))
+}
+
+type ErrorResponse {
+  ErrorResponse(error: String, error_description: String)
+}
+
+fn error_response_decoder() {
+  use error <- decode.field("error", decode.string)
+  use error_description <- decode.field("error_description", decode.string)
+  decode.success(ErrorResponse(error:, error_description:))
 }
 
 pub fn verify_access_token(
@@ -71,6 +134,33 @@ fn verify_token_with_endpoint(
         wisp.log_error(string.inspect(err))
         Unauthorized("Invalid token response")
       })
-    _ -> Error(Unauthorized("Failed to verify token"))
+    400 -> {
+      case json.parse(res.body, error_response_decoder()) {
+        Ok(error_response) -> {
+          wisp.log_error(
+            "Error: "
+            <> error_response.error
+            <> " - "
+            <> error_response.error_description,
+          )
+          Error(Unauthorized(error_response.error_description))
+        }
+        Error(parse_err) -> {
+          wisp.log_error(
+            "Failed to parse error response: " <> string.inspect(parse_err),
+          )
+          wisp.log_error("Raw response: " <> string.inspect(res))
+          Error(Unauthorized(
+            "There was a problem with the authentication endpoint",
+          ))
+        }
+      }
+    }
+    _ ->
+      Error(Unauthorized("There was a problem with the authentication endpoint"))
   }
+}
+
+pub fn has_scope(auth_response: AuthResponse, target_scope: Scope) -> Bool {
+  list.contains(auth_response.scopes, target_scope)
 }
