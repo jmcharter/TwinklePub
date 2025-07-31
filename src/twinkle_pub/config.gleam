@@ -4,6 +4,7 @@ import gleam/json
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
+import wisp
 
 import twinkle_pub/micropub.{type SyndicateTarget, syndicate_target_decoder}
 
@@ -12,6 +13,7 @@ pub type TwinklePubConfig {
     token_endpoint: String,
     media_endpoint: Option(String),
     syndicate_to: Option(List(SyndicateTarget)),
+    log_level: wisp.LogLevel,
   )
 }
 
@@ -41,8 +43,24 @@ pub fn load_twinkle_config() -> Result(TwinklePubConfig, ConfigError) {
     Error(_) -> Ok(None)
   }
 
+  let log_level = case envoy.get("LOG_LEVEL") {
+    Ok(level) ->
+      case level {
+        "debug" -> wisp.DebugLevel
+        "info" -> wisp.InfoLevel
+        "notice" -> wisp.NoticeLevel
+        "warn" -> wisp.WarningLevel
+        "error" -> wisp.WarningLevel
+        "critical" -> wisp.CriticalLevel
+        "alert" -> wisp.AlertLevel
+        "emergency" -> wisp.EmergencyLevel
+        _ -> wisp.InfoLevel
+      }
+    Error(_) -> wisp.InfoLevel
+  }
+
   use syndicate_to <- result.try(syndicate_to)
-  Ok(TwinklePubConfig(token_endpoint, media_endpoint, syndicate_to))
+  Ok(TwinklePubConfig(token_endpoint, media_endpoint, syndicate_to, log_level))
 }
 
 fn parse_syndicate_to_json(
