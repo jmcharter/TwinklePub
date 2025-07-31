@@ -6,6 +6,7 @@ pub type MicropubError {
   Unauthorized(String)
   Forbidden
   InsufficientScope
+  ServerError(String)
 }
 
 pub fn error_to_response(error: MicropubError) -> Response {
@@ -26,6 +27,8 @@ pub fn error_to_response(error: MicropubError) -> Response {
         "The authenticated user has insufficient scope for this request",
         401,
       )
+    ServerError(description) ->
+      json_error_response("server_error", description, 500)
   }
 }
 

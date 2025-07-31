@@ -4,6 +4,7 @@ import gleam/http/request
 import gleam/httpc
 import gleam/json
 import gleam/list
+import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 import gleam/time/timestamp.{type Timestamp}
@@ -11,7 +12,7 @@ import gleam/time/timestamp.{type Timestamp}
 import wisp.{type Request}
 
 import twinkle_pub/config.{type TwinklePubConfig}
-import twinkle_pub/http_errors.{type MicropubError, Unauthorized}
+import twinkle_pub/http_errors.{type MicropubError, InvalidRequest, Unauthorized}
 
 pub type AuthResponse {
   AuthResponse(
@@ -87,12 +88,16 @@ fn error_response_decoder() {
 
 pub fn verify_access_token(
   req: Request,
+  body_access_token: Option(String),
   config: TwinklePubConfig,
 ) -> Result(AuthResponse, MicropubError) {
-  case get_authorization_token(req) {
-    Ok(token) -> verify_token_with_endpoint(token, config)
-    Error(_) ->
+  case get_authorization_token(req), body_access_token {
+    Ok(token), None -> verify_token_with_endpoint(token, config)
+    Error(_), Some(token) -> verify_token_with_endpoint(token, config)
+    Error(_), None ->
       Error(Unauthorized("No access token was provided in the request"))
+    Ok(_), Some(_) ->
+      Error(InvalidRequest("Access token included in both header and body"))
   }
 }
 

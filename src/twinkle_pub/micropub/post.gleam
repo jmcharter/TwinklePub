@@ -3,6 +3,9 @@ import gleam/option.{type Option, None, Some}
 
 import twinkle_pub/auth.{type Scope}
 
+pub type Location =
+  String
+
 pub fn post_type_to_scope(post_type: PostTypeData) -> Scope {
   case post_type {
     PostTypeData("h-entry") -> auth.ScopeCreate
@@ -35,5 +38,6 @@ pub type MicropubPost {
   MicropubPost(
     micropub_type: Option(PostTypeData),
     content: Option(ContentData),
+    access_token: Option(String),
   )
 }
