@@ -6,6 +6,13 @@ import twinkle_pub/auth.{type Scope}
 pub type Location =
   String
 
+pub type MicropubAction {
+  Create
+  Update
+  Delete
+  Undelete
+}
+
 pub fn post_type_to_scope(post_type: PostTypeData) -> Scope {
   case post_type {
     PostTypeData("h-entry") -> auth.ScopeCreate
