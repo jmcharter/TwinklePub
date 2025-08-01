@@ -41,8 +41,8 @@ pub fn get_field(
   }
 }
 
-pub type MicropubPost {
-  MicropubPost(
+pub type PostBody {
+  PostBody(
     micropub_type: PostTypeData,
     // action: MicropubAction,
     content: Option(ContentData),
@@ -50,6 +50,6 @@ pub type MicropubPost {
   )
 }
 
-pub fn empty_post() -> MicropubPost {
-  MicropubPost(PostTypeData("h-entry"), None, None)
+pub fn empty_post() -> PostBody {
+  PostBody(PostTypeData("h-entry"), None, None)
 }

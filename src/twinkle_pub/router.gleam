@@ -1,4 +1,4 @@
-import gleam/http.{Get, Post}
+import gleam/http.{Get}
 import gleam/string_tree
 
 import wisp.{type Request, type Response}

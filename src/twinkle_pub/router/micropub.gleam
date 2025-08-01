@@ -16,7 +16,7 @@ import twinkle_pub/http_errors.{
   InsufficientScope, InvalidRequest, error_to_response,
 }
 import twinkle_pub/micropub.{MicropubConfig, get_micropub_config_json}
-import twinkle_pub/micropub/post.{type MicropubPost, MicropubPost}
+import twinkle_pub/micropub/post.{type PostBody, PostBody}
 import twinkle_pub/utils
 
 pub fn micropub(req: Request, config: TwinklePubConfig) {
@@ -96,7 +96,7 @@ fn handle_micropub_json(req: Request, config: TwinklePubConfig) {
   }
 }
 
-fn micropub_json_decoder() -> decode.Decoder(MicropubPost) {
+fn micropub_json_decoder() -> decode.Decoder(PostBody) {
   use post_type <- decode.then(post_type_decoder())
   use content <- decode.subfield(
     ["properties", "content"],
@@ -113,7 +113,7 @@ fn micropub_json_decoder() -> decode.Decoder(MicropubPost) {
     None,
     decode.optional(decode.string),
   )
-  decode.success(MicropubPost(micropub_type: post_type, content:, access_token:))
+  decode.success(PostBody(micropub_type: post_type, content:, access_token:))
 }
 
 fn post_type_decoder() -> decode.Decoder(post.PostTypeData) {
@@ -127,9 +127,9 @@ fn post_type_decoder() -> decode.Decoder(post.PostTypeData) {
 
 fn form_data_to_micropub_post(
   form_data: List(#(String, String)),
-) -> MicropubPost {
+) -> PostBody {
   let data = dict.from_list(form_data)
-  MicropubPost(
+  PostBody(
     micropub_type: option.unwrap(
       post.get_field(data, "h", post.PostTypeData),
       post.PostTypeData("create"),
@@ -141,7 +141,7 @@ fn form_data_to_micropub_post(
 
 fn process_micropub_post(
   req: Request,
-  micropub_data: MicropubPost,
+  micropub_data: PostBody,
   config: TwinklePubConfig,
 ) -> Result(post.Location, http_errors.MicropubError) {
   case auth.verify_access_token(req, micropub_data.access_token, config) {
