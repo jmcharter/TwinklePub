@@ -30,6 +30,7 @@ pub type Scope {
   ScopeUpdate
   ScopeDelete
   ScopeMedia
+  ScopeProfile
 }
 
 pub type Scopes =
@@ -42,6 +43,7 @@ pub fn string_to_scope(scope: String) -> Result(Scope, Nil) {
     "update" -> Ok(ScopeUpdate)
     "delete" -> Ok(ScopeDelete)
     "media" -> Ok(ScopeMedia)
+    "profile" -> Ok(ScopeProfile)
     _ -> Error(Nil)
   }
 }
