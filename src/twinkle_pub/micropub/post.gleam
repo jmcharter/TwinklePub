@@ -35,7 +35,7 @@ pub fn get_field(
 ) -> Option(data_type) {
   case dict.get(data, key) {
     // Handle type: h-entry, etc
-    Ok(value) if value == "h" -> Some(constructor("h-" <> value))
+    Ok(value) if key == "h" -> Some(constructor("h-" <> value))
     Ok(value) -> Some(constructor(value))
     Error(_) -> None
   }
@@ -43,8 +43,13 @@ pub fn get_field(
 
 pub type MicropubPost {
   MicropubPost(
-    micropub_type: Option(PostTypeData),
+    micropub_type: PostTypeData,
+    // action: MicropubAction,
     content: Option(ContentData),
     access_token: Option(String),
   )
+}
+
+pub fn empty_post() -> MicropubPost {
+  MicropubPost(PostTypeData("h-entry"), None, None)
 }
