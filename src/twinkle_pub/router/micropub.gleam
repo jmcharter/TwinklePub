@@ -1,4 +1,5 @@
 import gleam/dict
+import gleam/dynamic/decode
 import gleam/http.{Get, Post}
 import gleam/http/request
 import gleam/http/response
@@ -9,10 +10,10 @@ import gleam/string_tree
 
 import wisp.{type Request, type Response}
 
-import twinkle_pub/auth.{type AuthResponse}
+import twinkle_pub/auth
 import twinkle_pub/config.{type TwinklePubConfig}
 import twinkle_pub/http_errors.{
-  InsufficientScope, InvalidRequest, ServerError, error_to_response,
+  InsufficientScope, InvalidRequest, error_to_response,
 }
 import twinkle_pub/micropub.{MicropubConfig, get_micropub_config_json}
 import twinkle_pub/micropub/post.{type MicropubPost, MicropubPost}
@@ -54,7 +55,7 @@ fn micropub_post(req: Request, config: TwinklePubConfig) {
       |> error_to_response
     Ok(content_type) -> {
       case content_type {
-        "application/json" -> todo
+        "application/json" -> handle_micropub_json(req, config)
         "application/x-www-form-urlencoded" | "multipart/form-data" ->
           handle_micropub_form(req, config)
         _ ->
@@ -66,32 +67,62 @@ fn micropub_post(req: Request, config: TwinklePubConfig) {
 }
 
 fn handle_micropub_form(req: Request, config: TwinklePubConfig) {
+  wisp.log_debug("Handling Form request")
   use form <- wisp.require_form(req)
   let wisp.FormData(values, _files) = form
-
-  let post = form_data_to_micropub_post(values)
-  echo post
-  // post |> string.inspect |> wisp.log_info
-  case auth.verify_access_token(req, post.access_token, config) {
+  echo values
+  let new_post = form_data_to_micropub_post(values)
+  wisp.log_debug(new_post |> string.inspect)
+  case process_micropub_post(req, new_post, config) {
     Error(err) -> err |> error_to_response
-    Ok(auth_response) -> {
-      let required_scope = case post.micropub_type {
-        None -> auth.ScopeCreate
-        Some(post_type) -> post.post_type_to_scope(post_type)
-      }
-      case auth.has_scope(auth_response, required_scope) {
-        False -> InsufficientScope |> error_to_response
-        True -> {
-          case process_micropub_post(post, auth_response, config) {
-            Error(err) -> err |> error_to_response
-            Ok(location) -> {
-              wisp.created() |> response.set_header("location", location)
-            }
-          }
-        }
-      }
+    Ok(location) -> {
+      wisp.created() |> response.set_header("location", location)
     }
   }
+}
+
+fn handle_micropub_json(req: Request, config: TwinklePubConfig) {
+  wisp.log_debug("Handling JSON request")
+  use json_dynamic <- wisp.require_json(req)
+  echo json_dynamic
+  let new_post = decode.run(json_dynamic, micropub_json_decoder())
+  let new_post = result.unwrap(new_post, post.empty_post())
+  wisp.log_debug(new_post |> string.inspect)
+  case process_micropub_post(req, new_post, config) {
+    Error(err) -> err |> error_to_response
+    Ok(location) -> {
+      wisp.created() |> response.set_header("location", location)
+    }
+  }
+}
+
+fn micropub_json_decoder() -> decode.Decoder(MicropubPost) {
+  use post_type <- decode.then(post_type_decoder())
+  use content <- decode.subfield(
+    ["properties", "content"],
+    decode.list(decode.string)
+      |> decode.map(fn(content_list) {
+        case content_list {
+          [first, ..] -> Some(post.ContentData(first))
+          [] -> None
+        }
+      }),
+  )
+  use access_token <- decode.optional_field(
+    "access_token",
+    None,
+    decode.optional(decode.string),
+  )
+  decode.success(MicropubPost(micropub_type: post_type, content:, access_token:))
+}
+
+fn post_type_decoder() -> decode.Decoder(post.PostTypeData) {
+  decode.field("type", decode.list(decode.string), fn(type_list) {
+    case type_list {
+      [first, ..] -> decode.success(post.PostTypeData(first))
+      [] -> decode.success(post.PostTypeData("h-entry"))
+    }
+  })
 }
 
 fn form_data_to_micropub_post(
@@ -99,17 +130,33 @@ fn form_data_to_micropub_post(
 ) -> MicropubPost {
   let data = dict.from_list(form_data)
   MicropubPost(
-    micropub_type: post.get_field(data, "h", post.PostTypeData),
+    micropub_type: option.unwrap(
+      post.get_field(data, "h", post.PostTypeData),
+      post.PostTypeData("create"),
+    ),
     content: post.get_field(data, "content", post.ContentData),
     access_token: post.get_field(data, "access_token", fn(s) { s }),
   )
 }
 
 fn process_micropub_post(
+  req: Request,
   micropub_data: MicropubPost,
-  auth: AuthResponse,
   config: TwinklePubConfig,
 ) -> Result(post.Location, http_errors.MicropubError) {
+  case auth.verify_access_token(req, micropub_data.access_token, config) {
+    Error(err) -> err |> error_to_response
+    Ok(auth_response) -> {
+      let required_scope = post.post_type_to_scope(micropub_data.micropub_type)
+      case auth.has_scope(auth_response, required_scope) {
+        False -> InsufficientScope |> error_to_response
+        True -> {
+          wisp.created()
+          |> response.set_header("location", "https://foo.bar/baz/1")
+        }
+      }
+    }
+  }
   Ok("https://foo.bar/baz/1")
 }
 
