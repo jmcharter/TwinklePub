@@ -54,6 +54,11 @@ fn micropub_post(req: Request, config: TwinklePubConfig) {
       InvalidRequest("Missing or unsupported 'content-type' in request header")
       |> error_to_response
     Ok(content_type) -> {
+      let content_type =
+        content_type
+        |> string.split_once(";")
+        |> result.map(fn(x) { x.0 })
+        |> result.unwrap(content_type)
       case content_type {
         "application/json" -> handle_micropub_json(req, config)
         "application/x-www-form-urlencoded" | "multipart/form-data" ->
