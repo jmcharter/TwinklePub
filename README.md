@@ -33,14 +33,14 @@ The following environment variables should be configured before running the serv
 
 ### Required
 
-TOKEN_ENDPOINT: The URL of your IndieAuth token endpoint (e.g., https://tokens.indieauth.com/token)  
-ME: The URL of your personal website  
+`TOKEN_ENDPOINT`: The URL of your IndieAuth token endpoint (e.g., https://tokens.indieauth.com/token)  
+`ME`: The URL of your personal website  
 
 ### Optional
 
-MEDIA_ENDPOINT: The URL of the media endpoint Micropub clients should use  
-SYNDICATE_TO: A JSON array of syndication targets  
-LOG_LEVEL: Logging verbosity level - defaults to `INFO`. Supports: `DEBUG`, `INFO`, `WARN`, `ERROR`, `CRITICAL`  
+`MEDIA_ENDPOINT`: The URL of the media endpoint Micropub clients should use  
+`SYNDICATE_TO`: A JSON array of syndication targets  
+`LOG_LEVEL`: Logging verbosity level - defaults to `INFO`. Supports: `DEBUG`, `INFO`, `WARN`, `ERROR`, `CRITICAL`  
 
 
 
