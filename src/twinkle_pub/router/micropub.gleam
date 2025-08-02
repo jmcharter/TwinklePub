@@ -73,17 +73,22 @@ fn micropub_post(req: Request, config: TwinklePubConfig) {
   }
 }
 
-fn handle_micropub_form(req: Request, config: TwinklePubConfig) {
+fn handle_micropub_form(req: Request, config: TwinklePubConfig) -> Response {
   wisp.log_debug("Handling Form request")
   use form <- wisp.require_form(req)
   let wisp.FormData(values, _files) = form
   echo values
   let new_post = form_data_to_micropub_post(values)
   wisp.log_debug(new_post |> string.inspect)
-  case process_micropub_post(req, new_post, config) {
+  case new_post {
     Error(err) -> err |> error_to_response
-    Ok(location) -> {
-      wisp.created() |> response.set_header("location", location)
+    Ok(post) -> {
+      case process_micropub_post(req, post, config) {
+        Error(err) -> err |> error_to_response
+        Ok(location) -> {
+          wisp.created() |> response.set_header("location", location)
+        }
+      }
     }
   }
 }
@@ -106,7 +111,7 @@ fn handle_micropub_json(req: Request, config: TwinklePubConfig) {
 
 fn form_data_to_micropub_post(
   form_data: List(#(String, String)),
-) -> Result(PostBody, String) {
+) -> Result(PostBody, http_errors.MicropubError) {
   let action = case get_form_value(form_data, "action") {
     Some("update") -> post.Update
     Some("delete") -> post.Delete
