@@ -1,6 +1,5 @@
 import gleam/dynamic/decode
 import gleam/option.{None, Some}
-import wisp
 
 import twinkle_pub/micropub/post
 
@@ -13,10 +12,7 @@ pub fn post_body_decoder() -> decode.Decoder(post.PostBody) {
   )
   use properties <- decode.optional_field(
     "properties",
-    fn() {
-      wisp.log_error("Unable to decode properties.")
-      post.empty_properties()
-    }(),
+    post.empty_properties(),
     post_properties_decoder(),
   )
   use access_token <- decode.optional_field(

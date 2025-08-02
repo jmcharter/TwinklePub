@@ -97,15 +97,21 @@ fn handle_micropub_json(req: Request, config: TwinklePubConfig) {
   wisp.log_debug("Handling JSON request")
   use json_dynamic <- wisp.require_json(req)
   echo json_dynamic
-  let new_post = decode.run(json_dynamic, decoders.post_body_decoder())
-  new_post |> string.inspect |> wisp.log_debug
-  let new_post = result.unwrap(new_post, post.new())
-  new_post |> string.inspect |> wisp.log_debug
-  case process_micropub_post(req, new_post, config) {
+  let post_result =
+    decode.run(json_dynamic, decoders.post_body_decoder())
+    |> result.map_error(fn(_) {
+      http_errors.InvalidRequest("Unable to decode JSON body")
+    })
+  post_result |> string.inspect |> wisp.log_debug
+  case post_result {
     Error(err) -> err |> error_to_response
-    Ok(location) -> {
-      wisp.created() |> response.set_header("location", location)
-    }
+    Ok(post) ->
+      case process_micropub_post(req, post, config) {
+        Error(err) -> err |> error_to_response
+        Ok(location) -> {
+          wisp.created() |> response.set_header("location", location)
+        }
+      }
   }
 }
 

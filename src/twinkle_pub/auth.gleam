@@ -29,6 +29,7 @@ pub type Scope {
   ScopeDraft
   ScopeUpdate
   ScopeDelete
+  ScopeUndelete
   ScopeMedia
   ScopeProfile
 }
@@ -42,6 +43,7 @@ pub fn string_to_scope(scope: String) -> Result(Scope, Nil) {
     "draft" -> Ok(ScopeDraft)
     "update" -> Ok(ScopeUpdate)
     "delete" -> Ok(ScopeDelete)
+    "undelete" -> Ok(ScopeUndelete)
     "media" -> Ok(ScopeMedia)
     "profile" -> Ok(ScopeProfile)
     _ -> Error(Nil)
@@ -58,7 +60,10 @@ fn parse_scopes(scopes: String) -> Result(Scopes, String) {
 fn scope_decoder() -> decode.Decoder(Scopes) {
   use scope_string <- decode.then(decode.string)
   case parse_scopes(scope_string) {
-    Error(_) -> decode.failure([ScopeCreate], "Scopes")
+    Error(err) -> {
+      wisp.log_error(err)
+      decode.failure([], "List(Scope)")
+    }
     Ok(scopes) -> decode.success(scopes)
   }
 }
