@@ -3,6 +3,7 @@ import gleam/dynamic/decode
 import gleam/http.{Get, Post}
 import gleam/http/request
 import gleam/http/response
+import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
@@ -16,7 +17,8 @@ import twinkle_pub/http_errors.{
   InsufficientScope, InvalidRequest, error_to_response,
 }
 import twinkle_pub/micropub.{MicropubConfig, get_micropub_config_json}
-import twinkle_pub/micropub/post.{type PostBody, PostBody}
+import twinkle_pub/micropub/decoders
+import twinkle_pub/micropub/post.{type PostBody}
 import twinkle_pub/utils
 
 pub fn micropub(req: Request, config: TwinklePubConfig) {
@@ -90,9 +92,10 @@ fn handle_micropub_json(req: Request, config: TwinklePubConfig) {
   wisp.log_debug("Handling JSON request")
   use json_dynamic <- wisp.require_json(req)
   echo json_dynamic
-  let new_post = decode.run(json_dynamic, micropub_json_decoder())
-  let new_post = result.unwrap(new_post, post.empty_post())
-  wisp.log_debug(new_post |> string.inspect)
+  let new_post = decode.run(json_dynamic, decoders.post_body_decoder())
+  new_post |> string.inspect |> wisp.log_debug
+  let new_post = result.unwrap(new_post, post.new())
+  new_post |> string.inspect |> wisp.log_debug
   case process_micropub_post(req, new_post, config) {
     Error(err) -> err |> error_to_response
     Ok(location) -> {
@@ -101,47 +104,42 @@ fn handle_micropub_json(req: Request, config: TwinklePubConfig) {
   }
 }
 
-fn micropub_json_decoder() -> decode.Decoder(PostBody) {
-  use post_type <- decode.then(post_type_decoder())
-  use content <- decode.subfield(
-    ["properties", "content"],
-    decode.list(decode.string)
-      |> decode.map(fn(content_list) {
-        case content_list {
-          [first, ..] -> Some(post.ContentData(first))
-          [] -> None
-        }
-      }),
-  )
-  use access_token <- decode.optional_field(
-    "access_token",
-    None,
-    decode.optional(decode.string),
-  )
-  decode.success(PostBody(micropub_type: post_type, content:, access_token:))
-}
-
-fn post_type_decoder() -> decode.Decoder(post.PostTypeData) {
-  decode.field("type", decode.list(decode.string), fn(type_list) {
-    case type_list {
-      [first, ..] -> decode.success(post.PostTypeData(first))
-      [] -> decode.success(post.PostTypeData("h-entry"))
-    }
-  })
-}
-
 fn form_data_to_micropub_post(
   form_data: List(#(String, String)),
-) -> PostBody {
-  let data = dict.from_list(form_data)
-  PostBody(
-    micropub_type: option.unwrap(
-      post.get_field(data, "h", post.PostTypeData),
-      post.PostTypeData("create"),
-    ),
-    content: post.get_field(data, "content", post.ContentData),
-    access_token: post.get_field(data, "access_token", fn(s) { s }),
-  )
+) -> Result(PostBody, String) {
+  let action = case get_form_value(form_data, "action") {
+    Some("update") -> post.Update
+    Some("delete") -> post.Delete
+    Some("undelete") -> post.Undelete
+    _ -> post.Create
+  }
+
+  let object_type = case get_form_value(form_data, "h") {
+    Some("entry") -> [post.HEntry]
+    _ -> [post.HEntry]
+  }
+
+  let access_token = get_form_value(form_data, "access_token")
+
+  let properties = build_properties_from_form(form_data)
+
+  Ok(post.PostBody(object_type:, action:, properties:, access_token:))
+}
+
+fn build_properties_from_form(
+  form_data: List(#(String, String)),
+) -> post.Properties {
+  todo
+}
+
+fn get_form_value(
+  values: List(#(String, String)),
+  key: String,
+) -> Option(String) {
+  case list.key_find(values, key) {
+    Error(_) -> None
+    Ok(value) -> Some(value)
+  }
 }
 
 fn process_micropub_post(
@@ -152,7 +150,7 @@ fn process_micropub_post(
   case auth.verify_access_token(req, micropub_data.access_token, config) {
     Error(err) -> err |> error_to_response
     Ok(auth_response) -> {
-      let required_scope = post.post_type_to_scope(micropub_data.micropub_type)
+      let required_scope = post.action_to_scope(micropub_data.action)
       case auth.has_scope(auth_response, required_scope) {
         False -> InsufficientScope |> error_to_response
         True -> {

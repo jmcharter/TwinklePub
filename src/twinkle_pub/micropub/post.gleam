@@ -6,6 +6,49 @@ import twinkle_pub/auth.{type Scope}
 pub type Location =
   String
 
+pub type Url =
+  String
+
+pub type ObjectType {
+  HEntry
+}
+
+pub type Content {
+  SimpleContent(String)
+  RichContent(html: String, value: String)
+}
+
+pub type PropertyValues(a) =
+  Option(List(a))
+
+pub type Properties {
+  Properties(
+    content: PropertyValues(Content),
+    name: PropertyValues(String),
+    summary: PropertyValues(String),
+    published: PropertyValues(String),
+    updated: PropertyValues(String),
+    category: PropertyValues(String),
+    in_reply_to: PropertyValues(Url),
+    repost_of: PropertyValues(Url),
+    syndication: PropertyValues(Url),
+  )
+}
+
+pub fn empty_properties() -> Properties {
+  Properties(
+    content: None,
+    name: None,
+    summary: None,
+    published: None,
+    updated: None,
+    category: None,
+    in_reply_to: None,
+    repost_of: None,
+    syndication: None,
+  )
+}
+
 pub type MicropubAction {
   Create
   Update
@@ -13,19 +56,13 @@ pub type MicropubAction {
   Undelete
 }
 
-pub fn post_type_to_scope(post_type: PostTypeData) -> Scope {
-  case post_type {
-    PostTypeData("h-entry") -> auth.ScopeCreate
-    PostTypeData(_) -> auth.ScopeCreate
+pub fn action_to_scope(object_type: MicropubAction) -> Scope {
+  case object_type {
+    Create -> auth.ScopeCreate
+    Update -> auth.ScopeUpdate
+    Delete -> auth.ScopeDelete
+    Undelete -> auth.ScopeCreate
   }
-}
-
-pub type PostTypeData {
-  PostTypeData(String)
-}
-
-pub type ContentData {
-  ContentData(String)
 }
 
 pub fn get_field(
@@ -43,13 +80,18 @@ pub fn get_field(
 
 pub type PostBody {
   PostBody(
-    micropub_type: PostTypeData,
-    // action: MicropubAction,
-    content: Option(ContentData),
+    object_type: List(ObjectType),
+    action: MicropubAction,
+    properties: Properties,
     access_token: Option(String),
   )
 }
 
-pub fn empty_post() -> PostBody {
-  PostBody(PostTypeData("h-entry"), None, None)
+pub fn new() -> PostBody {
+  PostBody(
+    object_type: [HEntry],
+    action: Create,
+    properties: empty_properties(),
+    access_token: None,
+  )
 }
