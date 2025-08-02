@@ -92,7 +92,7 @@ fn post_properties_decoder() -> decode.Decoder(post.Properties) {
     post_property_values_decoder(decode.string),
   )
   use in_reply_to <- decode.optional_field(
-    "in_reply_to",
+    "in-reply-to",
     None,
     post_property_values_decoder(decode.string),
   )
@@ -102,7 +102,7 @@ fn post_properties_decoder() -> decode.Decoder(post.Properties) {
     post_property_values_decoder(decode.string),
   )
   use repost_of <- decode.optional_field(
-    "repost_of",
+    "repost-of",
     None,
     post_property_values_decoder(decode.string),
   )
