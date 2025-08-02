@@ -176,3 +176,17 @@ fn verify_token_with_endpoint(
 pub fn has_scope(auth_response: AuthResponse, target_scope: Scope) -> Bool {
   list.contains(auth_response.scopes, target_scope)
 }
+
+pub fn require_auth(
+  req: Request,
+  access_token: Option(String),
+  required_scope: Scope,
+  config: TwinklePubConfig,
+  next: fn(AuthResponse) -> Result(a, MicropubError),
+) -> Result(a, MicropubError) {
+  use auth_response <- result.try(verify_access_token(req, access_token, config))
+  case has_scope(auth_response, required_scope) {
+    False -> Error(http_errors.InsufficientScope)
+    True -> next(auth_response)
+  }
+}

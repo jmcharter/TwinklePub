@@ -158,19 +158,13 @@ fn process_micropub_post(
   micropub_data: PostBody,
   config: TwinklePubConfig,
 ) -> Result(post.Location, http_errors.MicropubError) {
-  case auth.verify_access_token(req, micropub_data.access_token, config) {
-    Error(err) -> err |> error_to_response
-    Ok(auth_response) -> {
-      let required_scope = post.action_to_scope(micropub_data.action)
-      case auth.has_scope(auth_response, required_scope) {
-        False -> InsufficientScope |> error_to_response
-        True -> {
-          wisp.created()
-          |> response.set_header("location", "https://foo.bar/baz/1")
-        }
-      }
-    }
-  }
+  let required_scope = post.action_to_scope(micropub_data.action)
+  use _ <- auth.require_auth(
+    req,
+    micropub_data.access_token,
+    required_scope,
+    config,
+  )
   Ok("https://foo.bar/baz/1")
 }
 
