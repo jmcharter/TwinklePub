@@ -30,6 +30,7 @@ pub type Properties {
     updated: PropertyValues(String),
     category: PropertyValues(String),
     in_reply_to: PropertyValues(Url),
+    like_of: PropertyValues(String),
     repost_of: PropertyValues(Url),
     syndication: PropertyValues(Url),
   )
@@ -44,6 +45,7 @@ pub fn empty_properties() -> Properties {
     updated: None,
     category: None,
     in_reply_to: None,
+    like_of: None,
     repost_of: None,
     syndication: None,
   )

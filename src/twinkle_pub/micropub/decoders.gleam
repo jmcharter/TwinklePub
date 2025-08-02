@@ -1,14 +1,10 @@
 import gleam/dynamic/decode
 import gleam/option.{None, Some}
+import wisp
 
 import twinkle_pub/micropub/post
 
 pub fn post_body_decoder() -> decode.Decoder(post.PostBody) {
-  // use object_type <- decode.optional_field(
-  //   "type",
-  //   [post.HEntry],
-  //   post_type_decoder(),
-  // )
   use object_type <- decode.then(post_type_decoder())
   use action <- decode.optional_field(
     "action",
@@ -17,7 +13,10 @@ pub fn post_body_decoder() -> decode.Decoder(post.PostBody) {
   )
   use properties <- decode.optional_field(
     "properties",
-    post.empty_properties(),
+    fn() {
+      wisp.log_error("Unable to decode properties.")
+      post.empty_properties()
+    }(),
     post_properties_decoder(),
   )
   use access_token <- decode.optional_field(
@@ -97,6 +96,11 @@ fn post_properties_decoder() -> decode.Decoder(post.Properties) {
     None,
     post_property_values_decoder(decode.string),
   )
+  use like_of <- decode.optional_field(
+    "like-of",
+    None,
+    post_property_values_decoder(decode.string),
+  )
   use repost_of <- decode.optional_field(
     "repost_of",
     None,
@@ -115,6 +119,7 @@ fn post_properties_decoder() -> decode.Decoder(post.Properties) {
     updated:,
     category:,
     in_reply_to:,
+    like_of:,
     repost_of:,
     syndication:,
   ))
