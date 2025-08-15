@@ -117,7 +117,7 @@ pub type FormValue =
 
 fn form_data_to_micropub_post(
   form_data: FormValue,
-) -> Result(PostBody, http_errors.MicropubError) {
+) -> Result(PostBody(untyped), http_errors.MicropubError) {
   let action = case get_form_value(form_data, "action") {
     Some("update") -> post.Update
     Some("delete") -> post.Delete
@@ -133,11 +133,20 @@ fn form_data_to_micropub_post(
   let access_token = get_form_value(form_data, "access_token")
   let properties = build_properties_from_form(form_data)
 
-  Ok(post.PostBody(object_type:, action:, properties:, access_token:))
+  Ok(
+    post.PostBody(
+      ..post.new(),
+      object_type:,
+      action:,
+      properties:,
+      access_token:,
+    ),
+  )
 }
 
 fn build_properties_from_form(form_data: FormValue) -> post.Properties {
   post.Properties(
+    ..post.empty_properties(),
     content: extract_content(form_data),
     name: extract_simple_values(form_data, "name"),
     summary: extract_simple_values(form_data, "summary"),
@@ -147,6 +156,7 @@ fn build_properties_from_form(form_data: FormValue) -> post.Properties {
     in_reply_to: extract_simple_values(form_data, "in-reply-to"),
     like_of: extract_simple_values(form_data, "like-of"),
     repost_of: extract_simple_values(form_data, "repost-of"),
+    read_of: extract_simple_values(form_data, "read-of"),
     syndication: extract_simple_values(form_data, "syndication"),
   )
 }
@@ -183,7 +193,7 @@ fn get_form_values(values: FormValue, key: String) -> List(String) {
 
 fn process_micropub_post(
   req: Request,
-  micropub_data: PostBody,
+  micropub_data: PostBody(typed),
   config: TwinklePubConfig,
 ) -> Result(post.Location, http_errors.MicropubError) {
   let required_scope = post.action_to_scope(micropub_data.action)

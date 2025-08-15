@@ -1,9 +1,11 @@
+import gleam/dict
 import gleam/dynamic/decode
 import gleam/option.{None, Some}
+import gleam/result
 
 import twinkle_pub/micropub/post
 
-pub fn post_body_decoder() -> decode.Decoder(post.PostBody) {
+pub fn post_body_decoder() -> decode.Decoder(post.PostBody(untyped)) {
   use object_type <- decode.then(post_type_decoder())
   use action <- decode.optional_field(
     "action",
@@ -20,12 +22,15 @@ pub fn post_body_decoder() -> decode.Decoder(post.PostBody) {
     None,
     decode.optional(decode.string),
   )
-  decode.success(post.PostBody(
-    object_type:,
-    action:,
-    properties:,
-    access_token:,
-  ))
+  decode.success(
+    post.PostBody(
+      ..post.new(),
+      object_type:,
+      action:,
+      properties:,
+      access_token:,
+    ),
+  )
 }
 
 /// This is quite redundant as we're always going to return HEntry, but in the
@@ -92,6 +97,11 @@ fn post_properties_decoder() -> decode.Decoder(post.Properties) {
     None,
     post_property_values_decoder(decode.string),
   )
+  use rsvp <- decode.optional_field(
+    "rsvp",
+    None,
+    post_property_values_decoder(decode.string),
+  )
   use like_of <- decode.optional_field(
     "like-of",
     None,
@@ -102,23 +112,33 @@ fn post_properties_decoder() -> decode.Decoder(post.Properties) {
     None,
     post_property_values_decoder(decode.string),
   )
+  use read_of <- decode.optional_field(
+    "read-of",
+    None,
+    post_property_values_decoder(decode.string),
+  )
   use syndication <- decode.optional_field(
     "syndication",
     None,
     post_property_values_decoder(decode.string),
   )
-  decode.success(post.Properties(
-    content:,
-    name:,
-    summary:,
-    published:,
-    updated:,
-    category:,
-    in_reply_to:,
-    like_of:,
-    repost_of:,
-    syndication:,
-  ))
+  decode.success(
+    post.Properties(
+      ..post.empty_properties(),
+      content:,
+      name:,
+      summary:,
+      published:,
+      updated:,
+      category:,
+      in_reply_to:,
+      rsvp:,
+      like_of:,
+      repost_of:,
+      read_of:,
+      syndication:,
+    ),
+  )
 }
 
 fn post_property_values_decoder(
@@ -128,5 +148,12 @@ fn post_property_values_decoder(
 }
 
 fn post_content_decoder() -> decode.Decoder(post.Content) {
-  decode.string |> decode.map(post.SimpleContent)
+  decode.one_of(decode.string |> decode.map(post.SimpleContent), [
+    decode.dict(decode.string, decode.string)
+    |> decode.map(fn(d) {
+      let html = dict.get(d, "html") |> option.from_result
+      let value = dict.get(d, "value") |> option.from_result
+      post.RichContent(html: html, value: value)
+    }),
+  ])
 }
