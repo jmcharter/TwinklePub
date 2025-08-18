@@ -123,6 +123,9 @@ pub fn new() -> PostBody(typeless) {
   )
 }
 
+/// Determine the post type of a typeless PostBody and return a new typed PostBody
+/// Defaults to Note type if a more specific type isn't determined.
+/// See https://indieweb.org/post-type-discovery for the discovery algorithm
 pub fn with_post_type(post_body: PostBody(typeless)) -> PostBody(typed) {
   let props = post_body.properties
   let post_type =

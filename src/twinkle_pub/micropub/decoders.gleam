@@ -1,11 +1,10 @@
 import gleam/dict
 import gleam/dynamic/decode
 import gleam/option.{None, Some}
-import gleam/result
 
 import twinkle_pub/micropub/post
 
-pub fn post_body_decoder() -> decode.Decoder(post.PostBody(untyped)) {
+pub fn post_body_decoder() -> decode.Decoder(post.PostBody(typed)) {
   use object_type <- decode.then(post_type_decoder())
   use action <- decode.optional_field(
     "action",
@@ -29,7 +28,8 @@ pub fn post_body_decoder() -> decode.Decoder(post.PostBody(untyped)) {
       action:,
       properties:,
       access_token:,
-    ),
+    )
+    |> post.with_post_type,
   )
 }
 
@@ -141,12 +141,17 @@ fn post_properties_decoder() -> decode.Decoder(post.Properties) {
   )
 }
 
+/// Decode a property field using the passed decoder, and return a decoder
+/// that produced a PropertyValues matching the type of the input decoder.
 fn post_property_values_decoder(
   item_decoder: decode.Decoder(a),
 ) -> decode.Decoder(post.PropertyValues(a)) {
   decode.list(item_decoder) |> decode.map(Some)
 }
 
+/// Decode the content field of a Micropub JSON body.
+/// Expect either simple plaintext content, or a dictionary of rich content
+/// with "html" and "value" keys (both optional, but would expect one)
 fn post_content_decoder() -> decode.Decoder(post.Content) {
   decode.one_of(decode.string |> decode.map(post.SimpleContent), [
     decode.dict(decode.string, decode.string)
