@@ -2,6 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
+import gleam/time/timestamp.{type Timestamp}
 
 import twinkle_pub/auth.{type Scope}
 
@@ -26,6 +27,23 @@ pub type PostType {
   RSVP
   Summary
   Video
+  Watch
+}
+
+pub fn post_type_to_string(post_type: PostType) {
+  case post_type {
+    Article -> "article"
+    Like -> "like"
+    Note -> "note"
+    Photo -> "photo"
+    RSVP -> "rsvp"
+    Read -> "read"
+    Reply -> "reply"
+    Repost -> "repost"
+    Summary -> "summary"
+    Video -> "video"
+    Watch -> "watch"
+  }
 }
 
 pub type Content {
@@ -51,6 +69,7 @@ pub type Properties {
     photo: PropertyValues(String),
     repost_of: PropertyValues(Url),
     read_of: PropertyValues(String),
+    watch_of: PropertyValues(String),
     syndication: PropertyValues(Url),
   )
 }
@@ -70,7 +89,21 @@ pub fn empty_properties() -> Properties {
     photo: None,
     repost_of: None,
     read_of: None,
+    watch_of: None,
     syndication: None,
+  )
+}
+
+pub type HCite {
+  HCite(
+    name: PropertyValues(String),
+    published: PropertyValues(Timestamp),
+    author: PropertyValues(String),
+    url: PropertyValues(Url),
+    uid: PropertyValues(String),
+    publication: PropertyValues(String),
+    accessed: PropertyValues(Timestamp),
+    photo: PropertyValues(Url),
   )
 }
 
@@ -103,6 +136,10 @@ pub fn get_field(
   }
 }
 
+pub type PostUntyped
+
+pub type PostTyped
+
 pub type PostBody(a) {
   PostBody(
     object_type: List(ObjectType),
@@ -113,7 +150,7 @@ pub type PostBody(a) {
   )
 }
 
-pub fn new() -> PostBody(typeless) {
+pub fn new() -> PostBody(PostUntyped) {
   PostBody(
     object_type: [HEntry],
     post_type: None,
@@ -126,7 +163,7 @@ pub fn new() -> PostBody(typeless) {
 /// Determine the post type of a typeless PostBody and return a new typed PostBody
 /// Defaults to Note type if a more specific type isn't determined.
 /// See https://indieweb.org/post-type-discovery for the discovery algorithm
-pub fn with_post_type(post_body: PostBody(typeless)) -> PostBody(typed) {
+pub fn with_post_type(post_body: PostBody(PostUntyped)) -> PostBody(PostTyped) {
   let props = post_body.properties
   let post_type =
     props
@@ -134,6 +171,8 @@ pub fn with_post_type(post_body: PostBody(typeless)) -> PostBody(typed) {
     |> result.lazy_or(fn() { check_property(props.in_reply_to, Reply) })
     |> result.lazy_or(fn() { check_property(props.repost_of, Repost) })
     |> result.lazy_or(fn() { check_property(props.like_of, Like) })
+    |> result.lazy_or(fn() { check_property(props.read_of, Read) })
+    |> result.lazy_or(fn() { check_property(props.watch_of, Watch) })
     |> result.lazy_or(fn() { check_property(props.video, Video) })
     |> result.lazy_or(fn() { check_property(props.photo, Photo) })
     |> result.lazy_or(fn() { check_property(props.summary, Summary) })

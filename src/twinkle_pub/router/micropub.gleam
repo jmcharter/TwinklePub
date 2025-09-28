@@ -114,7 +114,7 @@ fn handle_micropub_json(req: Request, config: TwinklePubConfig) {
 
 fn process_micropub_post(
   req: Request,
-  micropub_data: PostBody(typed),
+  micropub_data: PostBody(post.PostTyped),
   config: TwinklePubConfig,
 ) -> Result(post.Location, http_errors.MicropubError) {
   let required_scope = post.action_to_scope(micropub_data.action)

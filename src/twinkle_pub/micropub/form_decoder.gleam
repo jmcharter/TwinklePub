@@ -10,7 +10,7 @@ pub type FormValue =
 
 pub fn form_data_to_micropub_post(
   form_data: FormValue,
-) -> Result(PostBody(typed), http_errors.MicropubError) {
+) -> Result(PostBody(post.PostTyped), http_errors.MicropubError) {
   let action = case get_form_value(form_data, "action") {
     Some("update") -> post.Update
     Some("delete") -> post.Delete

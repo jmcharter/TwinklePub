@@ -4,7 +4,7 @@ import gleam/option.{None, Some}
 
 import twinkle_pub/micropub/post
 
-pub fn post_body_decoder() -> decode.Decoder(post.PostBody(typed)) {
+pub fn post_body_decoder() -> decode.Decoder(post.PostBody(post.PostTyped)) {
   use object_type <- decode.then(post_type_decoder())
   use action <- decode.optional_field(
     "action",
