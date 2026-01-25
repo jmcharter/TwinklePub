@@ -1,6 +1,5 @@
 import gleam/dynamic/decode
 import gleam/http.{Get, Post}
-import gleam/http/request
 import gleam/http/response
 import gleam/option.{type Option, None, Some}
 import gleam/result
@@ -12,6 +11,7 @@ import wisp.{type Request, type Response}
 import twinkle_pub/auth
 import twinkle_pub/config.{type TwinklePubConfig}
 import twinkle_pub/http_errors.{InvalidRequest, error_to_response}
+import twinkle_pub/middleware/content_type
 import twinkle_pub/micropub.{MicropubConfig, get_micropub_config_json}
 import twinkle_pub/micropub/decoders
 import twinkle_pub/micropub/form_decoder
@@ -48,26 +48,11 @@ fn micropub_get(req: Request, config: TwinklePubConfig) -> Response {
 }
 
 fn micropub_post(req: Request, config: TwinklePubConfig) {
-  case request.get_header(req, "content-type") {
-    Error(_) ->
-      InvalidRequest("Missing or unsupported 'content-type' in request header")
-      |> error_to_response
-    Ok(content_type) -> {
-      let content_type =
-        content_type
-        |> string.split_once(";")
-        |> result.map(fn(x) { x.0 })
-        |> result.unwrap(content_type)
-      case content_type {
-        "application/json" -> handle_micropub_json(req, config)
-        "application/x-www-form-urlencoded" | "multipart/form-data" ->
-          handle_micropub_form(req, config)
-        _ ->
-          InvalidRequest("Content type " <> content_type <> " not supported.")
-          |> error_to_response
-      }
-    }
-  }
+  content_type.require_micropub_content_type(
+    req,
+    fn() { handle_micropub_json(req, config) },
+    fn() { handle_micropub_form(req, config) },
+  )
 }
 
 fn handle_micropub_form(req: Request, config: TwinklePubConfig) -> Response {
