@@ -48,9 +48,13 @@ fn build_properties_from_form(form_data: FormValue) -> post.Properties {
     updated: extract_simple_values(form_data, "updated"),
     category: extract_simple_values(form_data, "category"),
     in_reply_to: extract_simple_values(form_data, "in-reply-to"),
+    rsvp: extract_simple_values(form_data, "rsvp"),
     like_of: extract_simple_values(form_data, "like-of"),
+    video: extract_simple_values(form_data, "video"),
+    photo: extract_simple_values(form_data, "photo"),
     repost_of: extract_simple_values(form_data, "repost-of"),
     read_of: extract_simple_values(form_data, "read-of"),
+    watch_of: extract_simple_values(form_data, "watch-of"),
     syndication: extract_simple_values(form_data, "syndication"),
   )
 }
