@@ -74,7 +74,6 @@ fn handle_micropub_form(req: Request, config: TwinklePubConfig) -> Response {
   wisp.log_debug("Handling Form request")
   use form <- wisp.require_form(req)
   let wisp.FormData(values, _files) = form
-  echo values
   let new_post = form_decoder.form_data_to_micropub_post(values)
   wisp.log_debug(new_post |> string.inspect)
   case new_post {
@@ -93,7 +92,6 @@ fn handle_micropub_form(req: Request, config: TwinklePubConfig) -> Response {
 fn handle_micropub_json(req: Request, config: TwinklePubConfig) {
   wisp.log_debug("Handling JSON request")
   use json_dynamic <- wisp.require_json(req)
-  echo json_dynamic
   let post_result =
     decode.run(json_dynamic, decoders.post_body_decoder())
     |> result.map_error(fn(_) {

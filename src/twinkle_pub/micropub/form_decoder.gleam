@@ -80,7 +80,6 @@ fn get_form_values(values: FormValue, key: String) -> List(String) {
   values
   |> list.filter(fn(pair) {
     let normalized_key = string.replace(pair.0, "[]", "")
-    echo normalized_key
     normalized_key == key
   })
   |> list.map(fn(pair) { pair.1 })
