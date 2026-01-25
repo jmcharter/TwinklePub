@@ -40,7 +40,6 @@ pub fn form_data_to_micropub_post(
 
 fn build_properties_from_form(form_data: FormValue) -> post.Properties {
   post.Properties(
-    ..post.empty_properties(),
     content: extract_content(form_data),
     name: extract_simple_values(form_data, "name"),
     summary: extract_simple_values(form_data, "summary"),
