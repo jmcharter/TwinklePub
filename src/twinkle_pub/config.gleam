@@ -11,6 +11,7 @@ import twinkle_pub/micropub.{type SyndicateTarget, syndicate_target_decoder}
 pub type TwinklePubConfig {
   TwinklePubConfig(
     token_endpoint: String,
+    me: String,
     media_endpoint: Option(String),
     syndicate_to: Option(List(SyndicateTarget)),
     log_level: wisp.LogLevel,
@@ -18,39 +19,55 @@ pub type TwinklePubConfig {
 }
 
 pub type ConfigError {
+  MissingRequiredEnvVar(name: String)
   InvalidSyndicateToJson(json.DecodeError)
 }
 
 pub fn load_twinkle_config() -> Result(TwinklePubConfig, ConfigError) {
-  let token_endpoint = case envoy.get("TOKEN_ENDPOINT") {
-    Ok(endpoint) -> endpoint
-    Error(_) -> panic as "TOKEN_ENDPOINT environment variable is required"
-  }
+  use token_endpoint <- result.try(require_env("TOKEN_ENDPOINT"))
+  use me <- result.try(require_env("ME"))
+  use syndicate_to <- result.try(load_syndicate_to())
 
-  let media_endpoint = case envoy.get("MEDIA_ENDPOINT") {
-    Ok(endpoint) -> Some(endpoint)
-    Error(_) -> None
-  }
+  let media_endpoint = envoy.get("MEDIA_ENDPOINT") |> option.from_result
+  let log_level = parse_log_level()
 
-  let syndicate_to = case envoy.get("SYNDICATE_TO") {
+  Ok(TwinklePubConfig(
+    token_endpoint:,
+    me:,
+    media_endpoint:,
+    syndicate_to:,
+    log_level:,
+  ))
+}
+
+fn require_env(name: String) -> Result(String, ConfigError) {
+  envoy.get(name)
+  |> result.map_error(fn(_) { MissingRequiredEnvVar(name) })
+}
+
+fn load_syndicate_to() -> Result(Option(List(SyndicateTarget)), ConfigError) {
+  case envoy.get("SYNDICATE_TO") {
     Ok(json_string) ->
       case string.trim(json_string) {
         "" -> Ok(None)
         trimmed_json ->
-          parse_syndicate_to_json(trimmed_json)
+          json.parse(trimmed_json, decode.list(syndicate_target_decoder()))
           |> result.map(Some)
+          |> result.map_error(InvalidSyndicateToJson)
       }
     Error(_) -> Ok(None)
   }
+}
 
-  let log_level = case envoy.get("LOG_LEVEL") {
+fn parse_log_level() -> wisp.LogLevel {
+  case envoy.get("LOG_LEVEL") {
     Ok(level) ->
-      case level {
+      case string.lowercase(level) {
         "debug" -> wisp.DebugLevel
         "info" -> wisp.InfoLevel
         "notice" -> wisp.NoticeLevel
-        "warn" -> wisp.WarningLevel
-        "error" -> wisp.WarningLevel
+        "warn" | "warning" -> wisp.WarningLevel
+        "error" -> wisp.ErrorLevel
         "critical" -> wisp.CriticalLevel
         "alert" -> wisp.AlertLevel
         "emergency" -> wisp.EmergencyLevel
@@ -58,26 +75,16 @@ pub fn load_twinkle_config() -> Result(TwinklePubConfig, ConfigError) {
       }
     Error(_) -> wisp.InfoLevel
   }
-
-  use syndicate_to <- result.try(syndicate_to)
-  Ok(TwinklePubConfig(token_endpoint, media_endpoint, syndicate_to, log_level))
-}
-
-fn parse_syndicate_to_json(
-  json_string: String,
-) -> Result(List(SyndicateTarget), ConfigError) {
-  json.parse(json_string, decode.list(syndicate_target_decoder()))
-  |> result.map_error(InvalidSyndicateToJson)
 }
 
 pub fn load_config_or_panic() -> TwinklePubConfig {
   case load_twinkle_config() {
     Ok(config) -> config
-    Error(InvalidSyndicateToJson(json_error)) -> {
-      let message =
-        "Invalid JSON detected for environment variable SYNDICATE_TO: "
-        <> string.inspect(json_error)
-      panic as message
-    }
+    Error(MissingRequiredEnvVar(name)) ->
+      panic as { "Missing required environment variable: " <> name }
+    Error(InvalidSyndicateToJson(json_error)) ->
+      panic as {
+        "Invalid JSON for SYNDICATE_TO: " <> string.inspect(json_error)
+      }
   }
 }
