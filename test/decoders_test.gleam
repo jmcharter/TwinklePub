@@ -36,25 +36,31 @@ pub fn json_with_multiple_categories_test() {
   let assert Some(["indieweb", "micropub"]) = post_body.properties.category
 }
 
-// TODO: These tests are failing due to a decoder bug
-// The action field decoder has nested optional_field calls causing path issues
-// See: post_action_decoder() in decoders.gleam uses decode.optional_field("action", ...)
-// inside post_body_decoder which also uses decode.optional_field("action", ...)
-
 pub fn json_action_update_test() {
-  // Skipping this test - action decoder needs fixing
-  // Currently the decoder has a bug where action decoding fails
-  let assert True = True
+  let json_str =
+    "{\"action\":\"update\",\"url\":\"https://example.com/post/1\",\"type\":[\"h-entry\"],\"properties\":{}}"
+
+  let assert Ok(post_body) = json.parse(json_str, decoders.post_body_decoder())
+
+  let assert post.Update = post_body.action
 }
 
 pub fn json_action_delete_test() {
-  // Skipping this test - action decoder needs fixing
-  let assert True = True
+  let json_str =
+    "{\"action\":\"delete\",\"url\":\"https://example.com/post/1\"}"
+
+  let assert Ok(post_body) = json.parse(json_str, decoders.post_body_decoder())
+
+  let assert post.Delete = post_body.action
 }
 
 pub fn json_action_undelete_test() {
-  // Skipping this test - action decoder needs fixing
-  let assert True = True
+  let json_str =
+    "{\"action\":\"undelete\",\"url\":\"https://example.com/post/1\"}"
+
+  let assert Ok(post_body) = json.parse(json_str, decoders.post_body_decoder())
+
+  let assert post.Undelete = post_body.action
 }
 
 pub fn json_action_default_create_test() {

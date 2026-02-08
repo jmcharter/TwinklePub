@@ -6,11 +6,7 @@ import twinkle_pub/micropub/post
 
 pub fn post_body_decoder() -> decode.Decoder(post.PostBody(post.PostTyped)) {
   use object_type <- decode.then(post_type_decoder())
-  use action <- decode.optional_field(
-    "action",
-    post.Create,
-    post_action_decoder(),
-  )
+  use action <- decode.then(post_action_decoder())
   use properties <- decode.optional_field(
     "properties",
     post.empty_properties(),
