@@ -1,17 +1,14 @@
-import gleeunit/should
 import twinkle_pub/utils
 
 pub fn get_last_query_param_test() {
-  let params_two_no_duplicates = [#("foo", "true"), #("bar", "false")]
-  let params_three_one_duplicate = [
+  let params_two = [#("foo", "true"), #("bar", "false")]
+  let params_three = [
     #("foo", "true"),
     #("bar", "false"),
     #("bar", "true"),
   ]
 
-  utils.get_last_query_param(params_two_no_duplicates, "foo")
-  |> should.equal(Ok("true"))
-
-  utils.get_last_query_param(params_three_one_duplicate, "bar")
-  |> should.equal(Ok("true"))
+  let assert Ok("true") = utils.get_last_query_param(params_two, "foo")
+  let assert Ok("true") = utils.get_last_query_param(params_three, "bar")
+  let assert Error(Nil) = utils.get_last_query_param(params_two, "missing")
 }
