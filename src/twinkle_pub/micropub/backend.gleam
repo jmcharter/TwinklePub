@@ -1,7 +1,6 @@
 import twinkle_pub/http_errors.{type MicropubError}
 import twinkle_pub/micropub/post
 
-/// Backend capabilities - what operations this backend supports
 pub type BackendCapabilities {
   BackendCapabilities(
     supports_update: Bool,
@@ -10,7 +9,6 @@ pub type BackendCapabilities {
   )
 }
 
-/// The Backend abstraction for post storage
 /// Implementations provide functions for CRUD operations on posts
 pub type Backend {
   Backend(

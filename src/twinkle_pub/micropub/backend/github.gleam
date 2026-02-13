@@ -32,7 +32,9 @@ pub fn new(config: GitHubConfig) -> Backend {
   Backend(
     get: fn(url) { get_post(git_config, config, url) },
     create: fn(post_body) { create_post(git_config, config, post_body) },
-    update: fn(url, post_body) { update_post(git_config, config, url, post_body) },
+    update: fn(url, post_body) {
+      update_post(git_config, config, url, post_body)
+    },
     delete: fn(url) { delete_post(git_config, config, url) },
     capabilities: backend.full_capabilities(),
   )

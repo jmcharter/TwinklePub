@@ -11,11 +11,11 @@ import wisp.{type Request, type Response}
 import twinkle_pub/auth
 import twinkle_pub/config.{type TwinklePubConfig}
 import twinkle_pub/http_errors.{InvalidRequest, error_to_response}
-import twinkle_pub/middleware/content_type
 import twinkle_pub/micropub.{MicropubConfig, get_micropub_config_json}
 import twinkle_pub/micropub/decoders
 import twinkle_pub/micropub/form_decoder
 import twinkle_pub/micropub/post.{type PostBody}
+import twinkle_pub/middleware/content_type
 import twinkle_pub/utils
 
 pub fn micropub(req: Request, config: TwinklePubConfig) {
@@ -107,7 +107,11 @@ fn process_micropub_post(
     required_scope,
     config,
   )
-  Ok("https://foo.bar/baz/1")
+  let _ = config.backend.create(micropub_data)
+  wisp.log_info(
+    "Post processed successfully. Retunring location: " <> config.me,
+  )
+  Ok(config.me)
 }
 
 fn handle_q_param(

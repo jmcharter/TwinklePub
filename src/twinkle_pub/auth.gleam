@@ -13,6 +13,10 @@ import wisp.{type Request}
 
 import twinkle_pub/config.{type TwinklePubConfig}
 import twinkle_pub/http_errors.{type MicropubError, InvalidRequest, Unauthorized}
+import twinkle_pub/micropub/post.{
+  type Scope, ScopeCreate, ScopeDelete, ScopeDraft, ScopeMedia, ScopeProfile,
+  ScopeUndelete, ScopeUpdate,
+}
 
 pub type AuthResponse {
   AuthResponse(
@@ -22,16 +26,6 @@ pub type AuthResponse {
     issued_at: Timestamp,
     nonce: Int,
   )
-}
-
-pub type Scope {
-  ScopeCreate
-  ScopeDraft
-  ScopeUpdate
-  ScopeDelete
-  ScopeUndelete
-  ScopeMedia
-  ScopeProfile
 }
 
 pub type Scopes =

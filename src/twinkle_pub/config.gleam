@@ -7,6 +7,8 @@ import gleam/string
 import wisp
 
 import twinkle_pub/micropub.{type SyndicateTarget, syndicate_target_decoder}
+import twinkle_pub/micropub/backend
+import twinkle_pub/micropub/backend/github
 
 pub type TwinklePubConfig {
   TwinklePubConfig(
@@ -15,6 +17,7 @@ pub type TwinklePubConfig {
     media_endpoint: Option(String),
     syndicate_to: Option(List(SyndicateTarget)),
     log_level: wisp.LogLevel,
+    backend: backend.Backend,
   )
 }
 
@@ -31,12 +34,28 @@ pub fn load_twinkle_config() -> Result(TwinklePubConfig, ConfigError) {
   let media_endpoint = envoy.get("MEDIA_ENDPOINT") |> option.from_result
   let log_level = parse_log_level()
 
+  use github_owner <- result.try(require_env("GITHUB_OWNER"))
+  use github_repo <- result.try(require_env("GITHUB_REPO"))
+  use github_token <- result.try(require_env("GITHUB_TOKEN"))
+  use github_base_path <- result.try(require_env("GITHUB_BASE_PATH"))
+
+  let github_config =
+    github.GitHubConfig(
+      owner: github_owner,
+      repo: github_repo,
+      token: github_token,
+      base_path: github_base_path,
+      base_url: "https://wibble.wobble",
+    )
+  let backend = github.new(github_config)
+
   Ok(TwinklePubConfig(
     token_endpoint:,
     me:,
     media_endpoint:,
     syndicate_to:,
     log_level:,
+    backend:,
   ))
 }
 

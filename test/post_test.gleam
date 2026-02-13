@@ -1,5 +1,4 @@
 import gleam/option.{None, Some}
-import twinkle_pub/auth
 import twinkle_pub/micropub/post
 
 pub fn post_type_to_string_article_test() {
@@ -47,19 +46,19 @@ pub fn post_type_to_string_watch_test() {
 }
 
 pub fn action_to_scope_create_test() {
-  let assert auth.ScopeCreate = post.action_to_scope(post.Create)
+  let assert post.ScopeCreate = post.action_to_scope(post.Create)
 }
 
 pub fn action_to_scope_update_test() {
-  let assert auth.ScopeUpdate = post.action_to_scope(post.Update)
+  let assert post.ScopeUpdate = post.action_to_scope(post.Update)
 }
 
 pub fn action_to_scope_delete_test() {
-  let assert auth.ScopeDelete = post.action_to_scope(post.Delete)
+  let assert post.ScopeDelete = post.action_to_scope(post.Delete)
 }
 
 pub fn action_to_scope_undelete_test() {
-  let assert auth.ScopeCreate = post.action_to_scope(post.Undelete)
+  let assert post.ScopeCreate = post.action_to_scope(post.Undelete)
 }
 
 pub fn with_post_type_note_default_test() {

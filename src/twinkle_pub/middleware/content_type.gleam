@@ -48,9 +48,7 @@ pub fn require_micropub_content_type(
     None ->
       case request.get_header(req, "content-type") {
         Error(_) ->
-          http_errors.InvalidRequest(
-            "Missing 'content-type' header in request",
-          )
+          http_errors.InvalidRequest("Missing 'content-type' header in request")
           |> http_errors.error_to_response
         Ok(ct) ->
           http_errors.InvalidRequest("Content type " <> ct <> " not supported")

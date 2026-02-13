@@ -4,8 +4,6 @@ import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/time/timestamp.{type Timestamp}
 
-import twinkle_pub/auth.{type Scope}
-
 pub type Location =
   String
 
@@ -114,12 +112,22 @@ pub type MicropubAction {
   Undelete
 }
 
+pub type Scope {
+  ScopeCreate
+  ScopeDraft
+  ScopeUpdate
+  ScopeDelete
+  ScopeUndelete
+  ScopeMedia
+  ScopeProfile
+}
+
 pub fn action_to_scope(object_type: MicropubAction) -> Scope {
   case object_type {
-    Create -> auth.ScopeCreate
-    Update -> auth.ScopeUpdate
-    Delete -> auth.ScopeDelete
-    Undelete -> auth.ScopeCreate
+    Create -> ScopeCreate
+    Update -> ScopeUpdate
+    Delete -> ScopeDelete
+    Undelete -> ScopeCreate
   }
 }
 
