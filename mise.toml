@@ -2,3 +2,6 @@
 erlang = "latest"
 gleam = "latest"
 rebar = "latest"
+
+[tasks.format]
+run = "gleam format src test"
