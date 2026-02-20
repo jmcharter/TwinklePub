@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Mise
-        run: curl curl https://mise.run | sh
+        run: curl https://mise.run | sh
 
       - name: Install Tools
         run: |
@@ -23,6 +23,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
 
-      - run: gleam deps download
-      - run: gleam test
-      - run: gleam format --check src test
+      - run: mise x -- gleam deps download
+      - run: mise x -- gleam test
+      - run: mise x -- gleam format --check src test
