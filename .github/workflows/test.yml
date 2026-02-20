@@ -20,6 +20,8 @@ jobs:
         run: |
           echo "$HOME/.local/bin" >> $GITHUB_PATH
           ~/.local/bin/mise install
+        env:
+          GITHUB_TOKEN: ${{ secrets.CI_GITHUB_TOKEN }}
 
       - run: gleam deps download
       - run: gleam test
